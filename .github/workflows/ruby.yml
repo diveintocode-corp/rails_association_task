@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: read
-  issues: write 
+  issues: write
 
 jobs:
   build:
@@ -14,25 +14,30 @@ jobs:
 
     services:
       postgres:
-        image: postgres:12.1-alpine
+        image: postgres:18.4-alpine
+        env:
+          POSTGRES_DB: rails_association_task_test
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rails_association_task_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Set up Ruby and Bundler
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3.0
+          ruby-version: 4.0.5
           bundler-cache: true
       - name: Set up Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v6
         with:
-          node-version: '14'
-          check-latest: true
-      - name: Install Yarn
-        run: yarn --frozen-lockfile
+          node-version: '24.18.0'
+          package-manager-cache: false
       - name: Create Evaluation File
         run: |
           rm -rf spec
@@ -42,7 +47,7 @@ jobs:
       - name: Create Evaluation File
         env:
           RAILS_ENV: "test"
-          DATABASE_URL: "postgres://postgres@localhost:5432/manyo_test"
+          DATABASE_URL: "postgres://postgres:postgres@localhost:5432/rails_association_task_test"
         run: |
           bundle exec rails db:setup
           bundle exec rspec -r ./spec/my_formatter.rb -f MyFormatter -o .github/feedback_template.md
@@ -50,7 +55,7 @@ jobs:
       - name: Rspec Results
         env:
           RAILS_ENV: "test"
-          DATABASE_URL: "postgres://postgres@localhost:5432/manyo_test"
+          DATABASE_URL: "postgres://postgres:postgres@localhost:5432/rails_association_task_test"
         run: |
           bundle exec rspec
         continue-on-error: true
